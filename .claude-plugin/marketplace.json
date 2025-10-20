@@ -1,0 +1,22 @@
+{
+  "name": "better-auth-agent-skills",
+  "owner": {
+    "name": "Alex Yang",
+    "email": "alex@better-auth.com"
+  },
+  "metadata": {
+    "description": "Better Auth skills",
+    "version": "1.0.0"
+  },
+  "plugins": [
+    {
+      "name": "auth-skills",
+      "description": "Create and update auth layer for JavaScript/TypeScript projects",
+      "source": "./",
+      "strict": false,
+      "skills": [
+        "./auth/create-auth"
+      ]
+    }
+  ]
+}
