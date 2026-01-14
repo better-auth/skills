@@ -15,7 +15,8 @@
       "source": "./",
       "strict": false,
       "skills": [
-        "./auth/create-auth"
+        "./better-auth/create-auth",
+        "./better-auth/best-practices"
       ]
     }
   ]

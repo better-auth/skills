@@ -3,7 +3,7 @@ name: Create Auth Skill
 description: A skill to create auth service for new applications.
 ---
 
-# Create auth layer for your TypeScript/JavaScript applications
+# Create an auth layer for your TypeScript/JavaScript applications
 
 ## Overview
 
