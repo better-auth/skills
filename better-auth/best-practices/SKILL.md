@@ -1,6 +1,9 @@
-# Better Auth Best Practices
+---
+name: Better Auth Best Practices
+description: A skill to integrate better-auth. And auth framework for TypeScript projects.
+---
 
-> Best practices for building Better Auth integrations. Use when implementing authentication, authorization, session management, OAuth providers, or any Better Auth integration.
+Best practices for building Better Auth integrations. Use when implementing authentication, authorization, session management, OAuth providers, or any Better Auth integration.
 
 When designing an authentication integration, always prefer [Better Auth's Documentation](https://better-auth.com/docs).
 
