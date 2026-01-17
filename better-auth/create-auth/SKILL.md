@@ -1,5 +1,5 @@
 ---
-name: Create Auth Skill
+name: create-auth-skill
 description: A skill to create auth service for new applications.
 ---
 # Create Auth Skill
