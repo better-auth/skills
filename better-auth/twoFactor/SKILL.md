@@ -1,5 +1,5 @@
 ---
-name: Two-Factor Authentication Best Practices
+name: two-factor-authentication-best-practices
 description: This skill provides guidance and enforcement rules for implementing secure two-factor authentication (2FA) using Better Auth's twoFactor plugin.
 ---
 
