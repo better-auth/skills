@@ -40,7 +40,7 @@ openssl rand -base64 32
 ## Rate Limiting
 
 Rate limiting protects your authentication endpoints from brute-force attacks and abuse.
-By default, rate limiting is not enabled. To enable it, set `rateLimit.enabled` to `true` in your auth config.
+By default, rate limiting is enabled in production but disabled in development. To explicitly enable it, set `rateLimit.enabled` to `true` in your auth config.
 Better Auth applies rate limiting to all endpoints by default.
 
 Each plugin can optionally have it's own configuration to adjust rate-limit rules for a given endpoint.
