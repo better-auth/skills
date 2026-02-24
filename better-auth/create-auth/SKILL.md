@@ -1,6 +1,6 @@
 ---
 name: create-auth-skill
-description: Skill for creating auth layers in TypeScript/JavaScript apps using Better Auth.
+description: Scaffold and implement authentication in TypeScript/JavaScript apps using Better Auth. Detect frameworks, configure database adapters, set up route handlers, add OAuth providers, and create auth UI pages. Use when users want to add login, sign-up, or authentication to a new or existing project with Better Auth.
 ---
 
 # Create Auth Skill
