@@ -92,7 +92,7 @@ After collecting answers, present a concise implementation plan as a markdown ch
 - **UI:** Custom forms
 
 ### Steps
-1. Install `better-auth` and `@better-auth/cli`
+1. Install `better-auth` and run `npx auth init`
 2. Create `lib/auth.ts` with server config
 3. Create `lib/auth-client.ts` with React client
 4. Set up route handler at `app/api/auth/[...all]/route.ts`
@@ -160,6 +160,12 @@ At the end of implementation, guide users thoroughly on remaining next steps (e.
 | `@better-auth/stripe` | Stripe payments |
 | `@better-auth/scim` | SCIM user provisioning |
 | `@better-auth/expo` | React Native/Expo |
+| `@better-auth/api-key` | API key auth (extracted from core in 1.5) |
+| `@better-auth/oauth-provider` | OAuth 2.1 / OIDC provider (replaces `oidcProvider`) |
+| `@better-auth/electron` | Electron desktop auth |
+| `@better-auth/i18n` | Internationalized error messages |
+| `@better-auth/drizzle-adapter` | Drizzle adapter (standalone, smaller bundle) |
+| `@better-auth/prisma-adapter` | Prisma adapter (standalone, smaller bundle) |
 
 ---
 
@@ -234,9 +240,10 @@ Add OAuth secrets as needed: `GITHUB_CLIENT_ID`, `GITHUB_CLIENT_SECRET`, `GOOGLE
 
 | Adapter | Command |
 |---------|---------|
-| Built-in Kysely | `npx @better-auth/cli@latest migrate` (applies directly) |
-| Prisma | `npx @better-auth/cli@latest generate --output prisma/schema.prisma` then `npx prisma migrate dev` |
-| Drizzle | `npx @better-auth/cli@latest generate --output src/db/auth-schema.ts` then `npx drizzle-kit push` |
+| Built-in Kysely | `npx auth migrate` (applies directly) |
+| Prisma | `npx auth generate --output prisma/schema.prisma` then `npx prisma migrate dev` |
+| Drizzle | `npx auth generate --output src/db/auth-schema.ts` then `npx drizzle-kit push` |
+| Any adapter (no config) | `npx auth generate --adapter prisma` or `--adapter drizzle` |
 
 **Re-run after adding plugins.**
 
@@ -249,9 +256,10 @@ Add OAuth secrets as needed: `GITHUB_CLIENT_ID`, `GITHUB_CLIENT_SECRET`, `GOOGLE
 | SQLite | Pass `better-sqlite3` or `bun:sqlite` instance directly |
 | PostgreSQL | Pass `pg.Pool` instance directly |
 | MySQL | Pass `mysql2` pool directly |
-| Prisma | `prismaAdapter(prisma, { provider: "postgresql" })` from `better-auth/adapters/prisma` |
-| Drizzle | `drizzleAdapter(db, { provider: "pg" })` from `better-auth/adapters/drizzle` |
-| MongoDB | `mongodbAdapter(db)` from `better-auth/adapters/mongodb` |
+| Cloudflare D1 | Pass the D1 binding directly — auto-detected |
+| Prisma | `prismaAdapter(prisma, { provider: "postgresql" })` from `better-auth/adapters/prisma` or `@better-auth/prisma-adapter` |
+| Drizzle | `drizzleAdapter(db, { provider: "pg" })` from `better-auth/adapters/drizzle` or `@better-auth/drizzle-adapter` |
+| MongoDB | `mongodbAdapter(db)` from `better-auth/adapters/mongodb` or `@better-auth/mongo-adapter` |
 
 ---
 
@@ -266,6 +274,11 @@ Add OAuth secrets as needed: `GITHUB_CLIENT_ID`, `GITHUB_CLIENT_SECRET`, `GOOGLE
 | `openAPI` | `better-auth/plugins` | - | API docs |
 | `passkey` | `@better-auth/passkey` | `passkeyClient` | WebAuthn |
 | `sso` | `@better-auth/sso` | - | Enterprise SSO |
+| `apiKey` | `@better-auth/api-key` | `apiKeyClient` | API keys (standalone package) |
+| `oauthProvider` | `@better-auth/oauth-provider` | - | OAuth 2.1 / OIDC server |
+| `electron` | `@better-auth/electron` | `electronClient` | Electron desktop auth |
+| `i18n` | `@better-auth/i18n` | - | Translated error messages |
+| `testUtils` | `better-auth/plugins` | - | Testing utilities |
 
 **Plugin pattern:** Server plugin + client plugin + run migrations.
 
@@ -317,5 +330,5 @@ Add OAuth secrets as needed: `GITHUB_CLIENT_ID`, `GITHUB_CLIENT_SECRET`, `GOOGLE
 - [Docs](https://better-auth.com/docs)
 - [Examples](https://github.com/better-auth/examples)
 - [Plugins](https://better-auth.com/docs/concepts/plugins)
-- [CLI](https://better-auth.com/docs/concepts/cli)
+- [CLI](https://better-auth.com/docs/concepts/cli) — Use `npx auth` (new standalone CLI replacing `@better-auth/cli`)
 - [Migration Guides](https://better-auth.com/docs/guides)

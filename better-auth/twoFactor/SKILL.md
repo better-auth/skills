@@ -7,7 +7,7 @@ description: Configure TOTP authenticator apps, send OTP codes via email/SMS, ma
 
 1. Add `twoFactor()` plugin to server config with `issuer`
 2. Add `twoFactorClient()` plugin to client config
-3. Run `npx @better-auth/cli migrate`
+3. Run `npx auth migrate` (deprecated alias: `npx @better-auth/cli migrate`)
 4. Verify: check that `twoFactorSecret` column exists on user table
 
 ```ts
@@ -270,7 +270,7 @@ twoFactor({
 
 ### Encryption at Rest
 
-TOTP secrets: encrypted with auth secret. Backup codes: encrypted by default. OTP: configurable (`"plain"`, `"encrypted"`, `"hashed"`). Uses constant-time comparison for verification.
+TOTP secrets: encrypted with auth secret. Backup codes: encrypted by default. OTP: configurable (`"plain"`, `"encrypted"`, `"hashed"`). Uses constant-time comparison for verification. OTP codes are atomically invalidated on use to prevent race-condition reuse attacks (1.5).
 
 2FA can only be enabled for credential (email/password) accounts.
 

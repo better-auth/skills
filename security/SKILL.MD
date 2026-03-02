@@ -27,6 +27,23 @@ Better Auth looks for secrets in this order:
 - Generate: `openssl rand -base64 32`
 - Never commit secrets to version control
 
+### Non-Destructive Secret Key Rotation
+
+Rotate `BETTER_AUTH_SECRET` without invalidating existing sessions, tokens, or encrypted data. The first entry is always used for new encryptions; all entries are tried for decryption.
+
+```ts
+export const auth = betterAuth({
+  secrets: [
+    { version: 2, value: process.env.NEW_SECRET }, // current — used for all new encryptions
+    { version: 1, value: process.env.OLD_SECRET }, // previous — kept for decryption only
+  ],
+});
+```
+
+Or via environment variable: `BETTER_AUTH_SECRETS="2:new-secret-key,1:old-secret-key"`
+
+Remove an old key from the array only after all data encrypted with it has been re-encrypted or expired.
+
 ## Rate Limiting
 
 Enabled in production by default. Applies to all endpoints. Plugins can override per-endpoint.
@@ -45,6 +62,11 @@ export const auth = betterAuth({
 });
 ```
 
+**Hardened defaults (1.5):**
+- Sign-in / sign-up: 3 requests per 10 seconds
+- Password reset / OTP: 3 requests per 60 seconds
+- Rejected requests are **not** counted against the limit
+
 ### Storage Options
 
 Options: `"memory"` (resets on restart, avoid on serverless), `"database"` (persistent), `"secondary-storage"` (Redis, default when available).
@@ -52,6 +74,18 @@ Options: `"memory"` (resets on restart, avoid on serverless), `"database"` (pers
 ```ts
 rateLimit: {
   storage: "database",
+}
+```
+
+### IPv6 Support
+
+Rate limit by IPv6 subnet prefix to prevent abuse from /128 addresses:
+
+```ts
+advanced: {
+  ipAddress: {
+    ipv6Subnet: 64, // Rate limit by /64 subnet (default: 64)
+  },
 }
 ```
 
@@ -74,7 +108,7 @@ rateLimit: {
 
 ### Per-Endpoint Rules
 
-Sensitive endpoints default to 3 requests per 10 seconds (`/sign-in`, `/sign-up`, `/change-password`, `/change-email`). Override:
+Sensitive endpoints default to 3 requests per 10 seconds (`/sign-in`, `/sign-up`, `/change-password`, `/change-email`), and 3 per 60 seconds for password reset and OTP. Override:
 
 ```ts
 rateLimit: {
@@ -261,6 +295,8 @@ Set `ipv6Subnet` (128, 64, 48, 32; default 64) to group IPv6 addresses. Enable `
 
 ## Database Hooks for Security Auditing
 
+**Important (1.5):** Database `after` hooks (`create.after`, `update.after`, `delete.after`) now run **after the transaction commits**, not during it. This means external side effects (emails, API calls) will not roll back the transaction if they fail — but you cannot rely on them for additional atomic DB writes.
+
 ```ts
 import { betterAuth } from "better-auth";
 
@@ -331,6 +367,34 @@ export const auth = betterAuth({
 ```
 
 Ensures operations like sending emails don't affect response timing.
+
+## Verification Token Storage
+
+Verification tokens (email verification, password reset, etc.) can be stored in secondary storage (e.g., Redis) instead of — or in addition to — the database:
+
+```ts
+export const auth = betterAuth({
+  secondaryStorage: { /* your Redis config */ },
+  verification: {
+    storeIdentifier: "hashed",   // Hash identifiers for extra security
+    storeInDatabase: false,      // Secondary storage only
+  },
+});
+```
+
+Per-type overrides:
+
+```ts
+verification: {
+  storeIdentifier: {
+    default: "plain",
+    overrides: {
+      "email-verification": "hashed",
+      "password-reset": "hashed",
+    },
+  },
+},
+```
 
 ## Account Enumeration Prevention
 
@@ -421,9 +485,10 @@ export const auth = betterAuth({
 Before deploying to production:
 
 - [ ] **Secret**: Use a strong, unique secret (32+ characters, high entropy)
+- [ ] **Secret Rotation**: Use `secrets` array for zero-downtime key rotation when needed
 - [ ] **HTTPS**: Ensure `baseURL` uses HTTPS
 - [ ] **Trusted Origins**: Configure all valid origins (frontend, mobile apps)
-- [ ] **Rate Limiting**: Keep enabled with appropriate limits
+- [ ] **Rate Limiting**: Keep enabled with appropriate limits (hardened defaults in 1.5)
 - [ ] **CSRF Protection**: Keep enabled (`disableCSRFCheck: false`)
 - [ ] **Secure Cookies**: Enabled automatically with HTTPS
 - [ ] **OAuth Tokens**: Consider `encryptOAuthTokens: true` if storing tokens

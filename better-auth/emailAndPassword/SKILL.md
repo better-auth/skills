@@ -8,7 +8,7 @@ description: Configure email verification, implement password reset flows, set p
 1. Enable email/password: `emailAndPassword: { enabled: true }`
 2. Configure `emailVerification.sendVerificationEmail`
 3. Add `sendResetPassword` for password reset flows
-4. Run `npx @better-auth/cli@latest migrate`
+4. Run `npx auth migrate` (deprecated alias: `npx @better-auth/cli@latest migrate`)
 5. Verify: attempt sign-up and confirm verification email triggers
 
 ---
@@ -48,7 +48,21 @@ export const auth = betterAuth({
 });
 ```
 
-**Note**: This requires `sendVerificationEmail` to be configured and only applies to email/password sign-ins.
+**Note**: This requires `sendVerificationEmail` to be configured and only applies to email/password sign-ins. When enabled, sign-up no longer reveals whether an email address is already registered (enumeration prevention, 1.5).
+
+## Server-Side Password Verification
+
+`verifyPassword` is a **server-only** endpoint (1.5). Use it to verify a user's current password without signing in, e.g. before a sensitive operation:
+
+```ts
+// Server-side only — there is no authClient.verifyPassword()
+const result = await auth.api.verifyPassword({
+  body: { password: "current-password" },
+  headers: request.headers, // forwards the session cookie
+});
+```
+
+The endpoint returns `{ valid: true }` on success or an error response if the password is incorrect or no session is present.
 
 ## Client Side Validation
 
@@ -91,6 +105,8 @@ export const auth = betterAuth({
   },
 });
 ```
+
+**Change email flow (1.5 rename):** The callback for sending confirmation to the current address is `sendChangeEmailConfirmation` (was `sendChangeEmailVerification` — now removed). The `/change-email` endpoint always returns `{ status: true }` regardless of whether the email exists, preventing user enumeration.
 
 ### Security Considerations
 

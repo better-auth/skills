@@ -15,7 +15,7 @@ description: Configure Better Auth server and client, set up database adapters, 
 2. Set env vars: `BETTER_AUTH_SECRET` and `BETTER_AUTH_URL`
 3. Create `auth.ts` with database + config
 4. Create route handler for your framework
-5. Run `npx @better-auth/cli@latest migrate`
+5. Run `npx auth migrate` (or `npx @better-auth/cli@latest migrate`)
 6. Verify: call `GET /api/auth/ok` — should return `{ status: "ok" }`
 
 ---
@@ -32,11 +32,19 @@ Only define `baseURL`/`secret` in config if env vars are NOT set.
 CLI looks for `auth.ts` in: `./`, `./lib`, `./utils`, or under `./src`. Use `--config` for custom path.
 
 ### CLI Commands
-- `npx @better-auth/cli@latest migrate` - Apply schema (built-in adapter)
-- `npx @better-auth/cli@latest generate` - Generate schema for Prisma/Drizzle
-- `npx @better-auth/cli mcp --cursor` - Add MCP to AI tools
 
-**Re-run after adding/changing plugins.**
+The new standalone CLI (`npx auth`) replaces the old `@better-auth/cli` package (now deprecated):
+
+- `npx auth init` - Interactive setup wizard (config, database adapter, framework integration)
+- `npx auth migrate` - Apply schema (built-in adapter)
+- `npx auth generate` - Generate schema for Prisma/Drizzle
+- `npx auth generate --adapter prisma` - Generate schema for a specific adapter without a config file
+- `npx auth generate --adapter drizzle` - Same, for Drizzle
+- `npx auth upgrade` - Upgrade Better Auth to the latest version
+
+The old `@better-auth/cli` commands still work as aliases during the deprecation period.
+
+**Re-run migrate/generate after adding/changing plugins.**
 
 ---
 
@@ -45,7 +53,7 @@ CLI looks for `auth.ts` in: `./`, `./lib`, `./utils`, or under `./src`. Use `--c
 | Option | Notes |
 |--------|-------|
 | `appName` | Optional display name |
-| `baseURL` | Only if `BETTER_AUTH_URL` not set |
+| `baseURL` | Only if `BETTER_AUTH_URL` not set. Supports dynamic config object: `{ allowedHosts, fallback, protocol }` for Vercel preview deployments and multi-domain setups. |
 | `basePath` | Default `/api/auth`. Set `/` for root. |
 | `secret` | Only if `BETTER_AUTH_SECRET` not set |
 | `database` | Required for most features. See adapters docs. |
@@ -59,9 +67,11 @@ CLI looks for `auth.ts` in: `./`, `./lib`, `./utils`, or under `./src`. Use `--c
 
 ## Database
 
-**Direct connections:** Pass `pg.Pool`, `mysql2` pool, `better-sqlite3`, or `bun:sqlite` instance.
+**Direct connections:** Pass `pg.Pool`, `mysql2` pool, `better-sqlite3`, `bun:sqlite`, or a Cloudflare D1 binding.
 
-**ORM adapters:** Import from `better-auth/adapters/drizzle`, `better-auth/adapters/prisma`, `better-auth/adapters/mongodb`.
+**ORM adapters:** Import from `better-auth/adapters/drizzle`, `better-auth/adapters/prisma`, `better-auth/adapters/mongodb` (re-exported from the main package), or directly from the extracted packages for smaller bundles: `@better-auth/drizzle-adapter`, `@better-auth/prisma-adapter`, `@better-auth/kysely-adapter`, `@better-auth/mongo-adapter`.
+
+**Cloudflare D1:** Pass the D1 binding directly — auto-detected, no adapter setup required. Note: D1 does not support interactive transactions; Better Auth uses `batch()` for atomicity.
 
 **Critical:** Better Auth uses adapter model names, NOT underlying table names. If Prisma model is `User` mapping to table `users`, use `modelName: "user"` (Prisma reference), not `"users"`.
 
@@ -109,17 +119,33 @@ CLI looks for `auth.ts` in: `./`, `./lib`, `./utils`, or under `./src`. Use `--c
 - `disableOriginCheck` - ⚠️ Security risk  
 - `crossSubDomainCookies.enabled` - Share cookies across subdomains
 - `ipAddress.ipAddressHeaders` - Custom IP headers for proxies
+- `ipAddress.ipv6Subnet` - Rate limit IPv6 by subnet prefix (default: 64)
 - `database.generateId` - Custom ID generation or `"serial"`/`"uuid"`/`false`
 
-**Rate limiting:** `rateLimit.enabled`, `rateLimit.window`, `rateLimit.max`, `rateLimit.storage` ("memory" | "database" | "secondary-storage").
+**Rate limiting:** `rateLimit.enabled`, `rateLimit.window`, `rateLimit.max`, `rateLimit.storage` ("memory" | "database" | "secondary-storage"). Default sensitive-endpoint limits are 3 req/10s for sign-in/sign-up and 3 req/60s for password-reset/OTP.
+
+**Secret key rotation** — rotate `BETTER_AUTH_SECRET` without invalidating existing data by providing a `secrets` array:
+
+```ts
+export const auth = betterAuth({
+  secrets: [
+    { version: 2, value: "new-secret-key" }, // first = active for new encryptions
+    { version: 1, value: "old-secret-key" }, // kept for decryption
+  ],
+});
+```
+
+Or via environment variable: `BETTER_AUTH_SECRETS="2:new-secret,1:old-secret"`
 
 ---
 
 ## Hooks
 
-**Endpoint hooks:** `hooks.before` / `hooks.after` - Array of `{ matcher, handler }`. Use `createAuthMiddleware`. Access `ctx.path`, `ctx.context.returned` (after), `ctx.context.session`.
+**Endpoint hooks:** `hooks.before` / `hooks.after` — Pass a single `createAuthMiddleware` handler or an array of `{ matcher, handler }` objects. Both global and plugin hooks use the same `AuthMiddleware` type. Access `ctx.path`, `ctx.context.returned` (after), `ctx.context.session`.
 
 **Database hooks:** `databaseHooks.user.create.before/after`, same for `session`, `account`. Useful for adding default values or post-creation actions.
+
+**Important (1.5):** `after` database hooks (`create.after`, `update.after`, `delete.after`) now run **after the transaction commits**, not inside it. If you need atomic database writes from a hook, use the adapter directly within the main operation.
 
 **Hook context (`ctx.context`):** `session`, `secret`, `authCookies`, `password.hash()`/`verify()`, `adapter`, `internalAdapter`, `generateId()`, `tables`, `baseURL`.
 
@@ -133,9 +159,19 @@ import { twoFactor } from "better-auth/plugins/two-factor"
 ```
 NOT `from "better-auth/plugins"`.
 
-**Popular plugins:** `twoFactor`, `organization`, `passkey`, `magicLink`, `emailOtp`, `username`, `phoneNumber`, `admin`, `apiKey`, `bearer`, `jwt`, `multiSession`, `sso`, `oauthProvider`, `oidcProvider`, `openAPI`, `genericOAuth`.
+**Popular plugins (bundled):** `twoFactor`, `organization`, `passkey`, `magicLink`, `emailOtp`, `username`, `phoneNumber`, `admin`, `bearer`, `jwt`, `multiSession`, `openAPI`, `genericOAuth`, `testUtils`.
+
+**Extracted to their own packages (install separately):**
+- `apiKey` → `@better-auth/api-key` (**removed from** `better-auth/plugins` in 1.5)
+- OAuth 2.1 provider → `@better-auth/oauth-provider` (replaces deprecated `oidcProvider`)
+- `electron` → `@better-auth/electron`
+- `i18n` → `@better-auth/i18n`
+
+**Breaking (1.5):** `apiKey` is no longer exported from `better-auth/plugins`. The `userId` field on `ApiKey` is renamed to `referenceId`.
 
 Client plugins go in `createAuthClient({ plugins: [...] })`.
+
+**Session update:** `authClient.updateSession({ ...fields })` updates custom additional session fields without re-authentication.
 
 ---
 
@@ -162,7 +198,10 @@ For separate client/server projects: `createAuthClient<typeof auth>()`.
 3. **Secondary storage** - Sessions go there by default, not DB
 4. **Cookie cache** - Custom session fields NOT cached, always re-fetched
 5. **Stateless mode** - No DB = session in cookie only, logout on cache expiry
-6. **Change email flow** - Sends to current email first, then new email
+6. **Change email flow** - Sends confirmation to old email, then sends verification to new email (`sendChangeEmailConfirmation` was renamed from `sendChangeEmailVerification`)
+7. **After hooks** - Database `after` hooks run post-transaction; don't rely on them for atomic DB writes
+8. **apiKey plugin** - Moved to `@better-auth/api-key` package; `userId` field renamed to `referenceId`
+9. **getMigrations import** - Must now be imported from `better-auth/db/migration`, not `better-auth`
 
 ---
 

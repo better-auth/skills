@@ -7,7 +7,7 @@ description: Configure multi-tenant organizations, manage members and invitation
 
 1. Add `organization()` plugin to server config
 2. Add `organizationClient()` plugin to client config
-3. Run `npx @better-auth/cli migrate`
+3. Run `npx auth migrate` (deprecated alias: `npx @better-auth/cli migrate`)
 4. Verify: check that organization, member, invitation tables exist in your database
 
 ```ts
@@ -299,14 +299,14 @@ export const auth = betterAuth({
 ```ts
 await authClient.organization.createRole({
   role: "moderator",
-  permission: {
+  permissions: {  // Note: "permissions" (plural) — "permission" was renamed in 1.5
     member: ["read"],
     invitation: ["read"],
   },
 });
 ```
 
-Use `updateRole({ roleId, permission })` and `deleteRole({ roleId })`. Pre-defined roles (owner, admin, member) cannot be deleted. Roles assigned to members cannot be deleted until reassigned.
+Use `updateRole({ roleId, permissions })` and `deleteRole({ roleId })`. Pre-defined roles (owner, admin, member) cannot be deleted. Roles assigned to members cannot be deleted until reassigned.
 
 ## Lifecycle Hooks
 
@@ -433,6 +433,7 @@ organization({
 
 - Invitations expire after 48 hours by default
 - Only the invited email address can accept an invitation
+- Expired invitations are automatically rejected on acceptance attempts (1.5)
 - Pending invitations can be cancelled by organization admins
 
 ## Complete Configuration Example
