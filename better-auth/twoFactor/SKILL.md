@@ -7,7 +7,7 @@ description: Configure TOTP authenticator apps, send OTP codes via email/SMS, ma
 
 1. Add `twoFactor()` plugin to server config with `issuer`
 2. Add `twoFactorClient()` plugin to client config
-3. Run `npx @better-auth/cli migrate`
+3. Run `npx @better-auth/cli@latest migrate` (built-in adapter) or generate + push for Drizzle/Prisma
 4. Verify: check that `twoFactorSecret` column exists on user table
 
 ```ts
