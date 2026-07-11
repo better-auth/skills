@@ -15,7 +15,10 @@ description: Configure Better Auth server and client, set up database adapters, 
 2. Set env vars: `BETTER_AUTH_SECRET` and `BETTER_AUTH_URL`
 3. Create `auth.ts` with database + config
 4. Create route handler for your framework
-5. Run `npx auth migrate` (or `npx @better-auth/cli@latest migrate`)
+5. Run migrations:
+   - **Built-in adapter:** `npx auth migrate` (deprecated alias: `npx @better-auth/cli@latest migrate`)
+   - **Drizzle:** `npx auth generate --output src/db/auth-schema.ts` then `npx drizzle-kit push` (dev) or `npx drizzle-kit generate && npx drizzle-kit migrate` (prod)
+   - **Prisma:** `npx auth generate --output prisma/schema.prisma` then `npx prisma migrate dev`
 6. Verify: call `GET /api/auth/ok` — should return `{ status: "ok" }`
 
 ---
@@ -67,11 +70,13 @@ The old `@better-auth/cli` commands still work as aliases during the deprecation
 
 ## Database
 
-**Direct connections:** Pass `pg.Pool`, `mysql2` pool, `better-sqlite3`, `bun:sqlite`, or a Cloudflare D1 binding.
+**Direct connections:** Pass `pg.Pool`, `mysql2` pool, `better-sqlite3`, `bun:sqlite`, or a Cloudflare D1 binding. For Postgres, also supports `postgres` (postgres.js) and `@neondatabase/serverless`.
 
 **ORM adapters:** Import from `better-auth/adapters/drizzle`, `better-auth/adapters/prisma`, `better-auth/adapters/mongodb` (re-exported from the main package), or directly from the extracted packages for smaller bundles: `@better-auth/drizzle-adapter`, `@better-auth/prisma-adapter`, `@better-auth/kysely-adapter`, `@better-auth/mongo-adapter`.
 
 **Cloudflare D1:** Pass the D1 binding directly — auto-detected, no adapter setup required. Note: D1 does not support interactive transactions; Better Auth uses `batch()` for atomicity.
+
+**Drizzle provider values:** `"pg"` (PostgreSQL), `"mysql"` (MySQL), `"sqlite"` (SQLite). Must match the driver used.
 
 **Critical:** Better Auth uses adapter model names, NOT underlying table names. If Prisma model is `User` mapping to table `users`, use `modelName: "user"` (Prisma reference), not `"users"`.
 
@@ -202,6 +207,8 @@ For separate client/server projects: `createAuthClient<typeof auth>()`.
 7. **After hooks** - Database `after` hooks run post-transaction; don't rely on them for atomic DB writes
 8. **apiKey plugin** - Moved to `@better-auth/api-key` package; `userId` field renamed to `referenceId`
 9. **getMigrations import** - Must now be imported from `better-auth/db/migration`, not `better-auth`
+10. **Drizzle: db not initialized** - `drizzleAdapter(db, ...)` requires a `db` instance from `drizzle()`. See `create-auth` skill for setup examples (node-postgres, postgres.js, Neon).
+11. **Drizzle: missing drizzle.config.ts** - `drizzle-kit` commands require a `drizzle.config.ts` pointing to the generated schema file and DB credentials.
 
 ---
 
