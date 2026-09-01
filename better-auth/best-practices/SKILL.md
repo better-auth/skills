@@ -5,7 +5,17 @@ description: Configure Better Auth server and client, set up database adapters, 
 
 # Better Auth Integration Guide
 
-**Always consult [better-auth.com/docs](https://better-auth.com/docs) for code examples and latest API.**
+## Documentation Version
+
+Use documentation that matches the Better Auth version installed in the project. APIs and plugin names can differ across maintained release lines.
+
+1. Prefer a version explicitly named by the user.
+2. Otherwise, inspect the resolved `better-auth` version in the lockfile, falling back to the package manifest when no lockfile is available.
+3. When the Better Auth MCP is available, call `get_doc` with `/llms.txt` to resolve that package version to a documentation identifier. Pass the identifier to every `search_docs` call and pass result paths to `get_doc` unchanged.
+4. Without MCP, start at [better-auth.com/llms.txt](https://better-auth.com/llms.txt) and follow the matching version index.
+5. Use the latest documentation only when the project version cannot be determined or the user explicitly asks about the latest release or an upgrade.
+
+When planning an upgrade, separate guidance for the currently installed version from guidance for the target version.
 
 ---
 
