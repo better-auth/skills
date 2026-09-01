@@ -16,9 +16,9 @@ description: Configure Better Auth server and client, set up database adapters, 
 3. Create `auth.ts` with database + config
 4. Create route handler for your framework
 5. Run migrations:
-   - **Built-in adapter:** `npx @better-auth/cli@latest migrate`
-   - **Drizzle:** `npx @better-auth/cli@latest generate --output src/db/auth-schema.ts` then `npx drizzle-kit push` (dev) or `npx drizzle-kit generate && npx drizzle-kit migrate` (prod)
-   - **Prisma:** `npx @better-auth/cli@latest generate --output prisma/schema.prisma` then `npx prisma migrate dev`
+   - **Built-in adapter:** `npx auth@latest migrate`
+   - **Drizzle:** `npx auth@latest generate --output src/db/auth-schema.ts` then `npx drizzle-kit push` (dev) or `npx drizzle-kit generate && npx drizzle-kit migrate` (prod)
+   - **Prisma:** `npx auth@latest generate --output prisma/schema.prisma` then `npx prisma migrate dev`
 6. Verify: call `GET /api/auth/ok` — should return `{ status: "ok" }`
 
 ---
@@ -35,9 +35,9 @@ Only define `baseURL`/`secret` in config if env vars are NOT set.
 CLI looks for `auth.ts` in: `./`, `./lib`, `./utils`, or under `./src`. Use `--config` for custom path.
 
 ### CLI Commands
-- `npx @better-auth/cli@latest migrate` - Apply schema (built-in adapter)
-- `npx @better-auth/cli@latest generate` - Generate schema for Prisma/Drizzle
-- `npx @better-auth/cli mcp --cursor` - Add MCP to AI tools
+- `npx auth@latest migrate` - Apply schema (built-in adapter)
+- `npx auth@latest generate` - Generate schema for Prisma/Drizzle
+- `npx auth@latest mcp --cursor` - Add MCP to AI tools
 
 **Re-run after adding/changing plugins.**
 
