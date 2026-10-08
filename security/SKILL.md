@@ -62,15 +62,19 @@ Implement your own rate limit storage:
 ```ts
 rateLimit: {
   customStorage: {
-    get: async (key) => {
-      // Return { count: number, expiresAt: number } or null
-    },
-    set: async (key, data) => {
-      // Store the rate limit data
+    consume: async (key, rule) => {
+      // Your store must increment the counter for `key`, apply the window expiry, and compare against
+      // rule.max in one atomic operation (a Redis script, a database upsert, or similar).
+      // rule.window is in seconds, rule.max is the request limit.
+      const { count, secondsUntilReset } = await store.incrementWithExpiry(key, rule.window);
+      if (count <= rule.max) return { allowed: true, retryAfter: null };
+      return { allowed: false, retryAfter: secondsUntilReset };
     },
   },
 }
 ```
+
+Since Better Auth 1.7.0, `consume` must check and increment in one operation. The separate `get` and `set` methods used by earlier releases are no longer accepted because they let concurrent requests pass the same stale counter.
 
 ### Per-Endpoint Rules
 
@@ -79,14 +83,16 @@ Sensitive endpoints default to 3 requests per 10 seconds (`/sign-in`, `/sign-up`
 ```ts
 rateLimit: {
   customRules: {
-    "/api/auth/sign-in/email": {
+    "/sign-in/email": {
       window: 60, // 1 minute window
       max: 5, // 5 attempts
     },
-    "/api/auth/some-safe-endpoint": false, // Disable rate limiting
+    "/some-safe-endpoint": false, // Disable rate limiting
   },
 }
 ```
+
+Keys are relative to the auth base path (`/api/auth` by default), not full request paths. `"/api/auth/sign-in/email"` never matches.
 
 ## CSRF Protection
 
@@ -354,8 +360,8 @@ export const auth = betterAuth({
     enabled: true,
     storage: "secondary-storage",
     customRules: {
-      "/api/auth/sign-in/email": { window: 60, max: 5 },
-      "/api/auth/sign-up/email": { window: 60, max: 3 },
+      "/sign-in/email": { window: 60, max: 5 },
+      "/sign-up/email": { window: 60, max: 3 },
     },
   },
   
